@@ -1,0 +1,439 @@
+<mujoco model="semantic_costmap_navigation">
+
+    <compiler angle="degree" autolimits="true"/>
+
+    <option timestep="0.005"
+            gravity="0 0 -9.81"
+            integrator="implicitfast"/>
+
+    <visual>
+        <headlight diffuse="0.3 0.3 0.3"
+                   ambient="0.35 0.35 0.38"
+                   specular="0.1 0.1 0.1"/>
+        <quality shadowsize="4096" offsamples="8"/>
+        <map force="0.1" zfar="80" fogstart="30" fogend="70"/>
+        <global offwidth="1920" offheight="1080"/>
+        <rgba haze="0.78 0.83 0.90 1"/>
+    </visual>
+
+    <asset>
+
+        <texture name="tex_sky" type="skybox" builtin="gradient"
+                 rgb1="0.30 0.50 0.80" rgb2="0.85 0.90 0.96"
+                 width="512" height="1024"/>
+
+        <texture name="tex_pavement" type="2d" builtin="checker"
+                 rgb1="0.44 0.44 0.46" rgb2="0.38 0.38 0.40"
+                 mark="random" markrgb="0.52 0.52 0.53" random="0.015"
+                 width="512" height="512"/>
+
+        <texture name="tex_grass" type="2d" builtin="flat"
+                 rgb1="0.18 0.42 0.14"
+                 mark="random" markrgb="0.34 0.60 0.25" random="0.45"
+                 width="512" height="512"/>
+
+        <texture name="tex_gravel" type="2d" builtin="flat"
+                 rgb1="0.52 0.48 0.42"
+                 mark="random" markrgb="0.68 0.65 0.60" random="0.55"
+                 width="512" height="512"/>
+
+        <texture name="tex_mud" type="2d" builtin="flat"
+                 rgb1="0.24 0.18 0.12"
+                 mark="random" markrgb="0.34 0.27 0.19" random="0.30"
+                 width="512" height="512"/>
+
+        <texture name="tex_brick" type="cube" builtin="checker"
+                 rgb1="0.55 0.27 0.21" rgb2="0.47 0.23 0.18"
+                 width="256" height="256"/>
+
+        <texture name="tex_wood" type="cube" builtin="flat"
+                 rgb1="0.58 0.42 0.24"
+                 mark="edge" markrgb="0.40 0.28 0.15"
+                 width="256" height="256"/>
+
+        <texture name="tex_bark" type="cube" builtin="flat"
+                 rgb1="0.32 0.24 0.17"
+                 mark="random" markrgb="0.22 0.16 0.11" random="0.35"
+                 width="256" height="256"/>
+
+        <texture name="tex_foliage" type="cube" builtin="flat"
+                 rgb1="0.17 0.38 0.15"
+                 mark="random" markrgb="0.26 0.52 0.20" random="0.40"
+                 width="256" height="256"/>
+
+        <material name="mat_pavement" texture="tex_pavement"
+                  texrepeat="24 24" texuniform="true"
+                  specular="0.12" shininess="0.1" reflectance="0.04"/>
+
+        <material name="mat_grass" texture="tex_grass"
+                  texrepeat="16 16" texuniform="true"
+                  specular="0.02" shininess="0.02"/>
+
+        <material name="mat_gravel" texture="tex_gravel"
+                  texrepeat="14 14" texuniform="true"
+                  specular="0.05" shininess="0.05"/>
+
+        <material name="mat_mud" texture="tex_mud"
+                  texrepeat="8 8" texuniform="true"
+                  specular="0.55" shininess="0.6" reflectance="0.12"/>
+
+        <material name="mat_brick"   texture="tex_brick"   texrepeat="6 3" specular="0.05" shininess="0.05"/>
+        <material name="mat_wood"    texture="tex_wood"    specular="0.15" shininess="0.15"/>
+        <material name="mat_bark"    texture="tex_bark"    specular="0.05" shininess="0.05"/>
+        <material name="mat_foliage" texture="tex_foliage" specular="0.08" shininess="0.1"/>
+
+        <material name="mat_concrete" rgba="0.72 0.71 0.68 1" specular="0.1"  shininess="0.1"/>
+        <material name="mat_orange"   rgba="0.92 0.35 0.06 1" specular="0.3"  shininess="0.3"/>
+        <material name="mat_white"    rgba="0.95 0.95 0.95 1" specular="0.3"  shininess="0.3"/>
+        <material name="mat_blue"     rgba="0.15 0.30 0.72 1" specular="0.55" shininess="0.6"/>
+        <material name="mat_red"      rgba="0.72 0.13 0.11 1" specular="0.55" shininess="0.6"/>
+        <material name="mat_yellow"   rgba="0.90 0.75 0.12 1" specular="0.4"  shininess="0.4"/>
+        <material name="mat_steel"    rgba="0.62 0.64 0.67 1" specular="0.85" shininess="0.85" reflectance="0.15"/>
+        <material name="mat_darkgrey" rgba="0.20 0.20 0.22 1" specular="0.3"  shininess="0.3"/>
+        <material name="mat_glass"    rgba="0.35 0.48 0.55 0.7" specular="0.9" shininess="0.9" reflectance="0.3"/>
+
+    </asset>
+
+    <default>
+        <default class="obstacle">
+            <geom contype="1" conaffinity="1" condim="3" friction="0.9 0.01 0.001"/>
+        </default>
+        <default class="terrain">
+            <geom contype="0" conaffinity="0" group="0"/>
+        </default>
+    </default>
+
+    <worldbody>
+
+        <light name="sun"
+               pos="6 -8 12" dir="-0.4 0.55 -0.85"
+               directional="true" castshadow="true"
+               diffuse="0.85 0.83 0.78" specular="0.25 0.25 0.25"/>
+
+        <light name="fill"
+               pos="-8 6 9" dir="0.5 -0.4 -0.8"
+               directional="true" castshadow="false"
+               diffuse="0.22 0.24 0.30"/>
+
+        <geom name="floor" type="plane" size="25 25 0.1"
+              material="mat_pavement"
+              contype="1" conaffinity="1" condim="3"
+              friction="1.0 0.01 0.001"/>
+
+        <geom name="grass_patch" class="terrain" type="box"
+              pos="6 5 0.005" size="5.0 4.0 0.005" material="mat_grass"/>
+
+        <geom name="grass_lawn_b" class="terrain" type="box"
+              pos="-6.5 -5.5 0.005" size="4.0 3.5 0.005" material="mat_grass"/>
+
+        <geom name="gravel_path" class="terrain" type="box"
+              pos="0 -1.6 0.006" size="11.0 0.9 0.005" material="mat_gravel"/>
+
+        <geom name="gravel_spur" class="terrain" type="box"
+              pos="3.5 2.5 0.006" size="0.8 4.2 0.005" material="mat_gravel"/>
+
+        <geom name="mud_patch" class="terrain" type="ellipsoid"
+              pos="-3.2 2.6 0.004" size="2.1 1.5 0.004" material="mat_mud"/>
+
+        <geom name="mud_patch_small" class="terrain" type="ellipsoid"
+              pos="-1.0 3.9 0.004" size="0.9 0.7 0.004" material="mat_mud"/>
+
+        <body name="robot" pos="-9.8 8.7 0.20">
+
+            <freejoint/>
+
+            <geom name="robot_body" class="obstacle" type="cylinder"
+                  size="0.22 0.13" material="mat_blue" mass="8.0"/>
+
+            <geom name="robot_bumper" class="terrain" type="cylinder"
+                  pos="0 0 -0.10" size="0.24 0.03" material="mat_darkgrey"/>
+
+            <geom name="camera_mount" class="terrain" type="capsule"
+                  fromto="0 0 0.13 0 0 0.50" size="0.028" material="mat_darkgrey"/>
+
+            <geom name="sensor_head" class="terrain" type="box"
+                  pos="0.06 0 0.53" size="0.09 0.11 0.05" material="mat_darkgrey"/>
+
+            <geom name="robot_beacon" class="terrain" type="sphere"
+                  pos="-0.10 0 0.56" size="0.045" material="mat_yellow"/>
+
+            <camera name="rgbd_camera"
+                    pos="0.16 0 0.53"
+                    xyaxes="0 -1 0  0.259 0 0.966"
+                    fovy="90"/>
+
+        </body>
+
+        <geom name="building_wall" class="obstacle" type="box"
+              pos="-11.0 0 1.8" size="0.35 9.0 1.8" material="mat_brick"/>
+
+        <geom name="building_trim" class="terrain" type="box"
+              pos="-11.0 0 3.68" size="0.45 9.1 0.12" material="mat_concrete"/>
+
+        <geom name="doorway" class="terrain" type="box"
+              pos="-10.62 1.5 1.05" size="0.04 0.85 1.05" material="mat_darkgrey"/>
+
+        <geom name="window_a" class="terrain" type="box"
+              pos="-10.62 -3.0 2.10" size="0.04 1.0 0.7" material="mat_glass"/>
+
+        <geom name="window_b" class="terrain" type="box"
+              pos="-10.62 5.0 2.10" size="0.04 1.0 0.7" material="mat_glass"/>
+
+        <geom name="tree_1_trunk"  class="obstacle" type="cylinder"
+              pos="7.0 6.5 1.1" size="0.20 1.1" material="mat_bark"/>
+        <geom name="tree_1_canopy" class="terrain" type="ellipsoid"
+              pos="7.0 6.5 2.7" size="1.5 1.5 1.25" material="mat_foliage"/>
+
+        <geom name="tree_2_trunk"  class="obstacle" type="cylinder"
+              pos="4.2 7.8 1.0" size="0.18 1.0" material="mat_bark"/>
+        <geom name="tree_2_canopy" class="terrain" type="ellipsoid"
+              pos="4.2 7.8 2.4" size="1.3 1.3 1.1" material="mat_foliage"/>
+
+        <geom name="tree_3_trunk"  class="obstacle" type="cylinder"
+              pos="-7.5 -6.5 1.2" size="0.22 1.2" material="mat_bark"/>
+        <geom name="tree_3_canopy" class="terrain" type="ellipsoid"
+              pos="-7.5 -6.5 2.9" size="1.7 1.7 1.4" material="mat_foliage"/>
+
+        <geom name="tree_4_trunk"  class="obstacle" type="cylinder"
+              pos="9.5 1.0 0.95" size="0.17 0.95" material="mat_bark"/>
+        <geom name="tree_4_canopy" class="terrain" type="ellipsoid"
+              pos="9.5 1.0 2.3" size="1.25 1.25 1.05" material="mat_foliage"/>
+
+        <geom name="crate_1" class="obstacle" type="box"
+              pos="2.6 1.2 0.45" size="0.45 0.45 0.45" material="mat_wood"/>
+
+        <geom name="crate_2" class="obstacle" type="box"
+              pos="3.5 0.6 0.35" size="0.35 0.35 0.35" material="mat_wood"/>
+
+        <geom name="crate_3" class="obstacle" type="box"
+              pos="2.6 1.2 1.25" size="0.35 0.35 0.35"
+              euler="0 0 22" material="mat_wood"/>
+
+        <geom name="pallet" class="obstacle" type="box"
+              pos="4.6 1.6 0.07" size="0.6 0.5 0.07" material="mat_wood"/>
+
+        <geom name="barrel_1" class="obstacle" type="cylinder"
+              pos="-3.0 -3.4 0.45" size="0.28 0.45" material="mat_red"/>
+
+        <geom name="barrel_2" class="obstacle" type="cylinder"
+              pos="-3.7 -2.8 0.45" size="0.28 0.45" material="mat_blue"/>
+
+        <geom name="barrel_3" class="obstacle" type="cylinder"
+              pos="-2.9 -2.5 0.45" size="0.28 0.45" material="mat_yellow"/>
+
+        <geom name="cone_1" class="obstacle" type="cylinder"
+              pos="1.2 -3.6 0.22" size="0.16 0.22" material="mat_orange"/>
+        <geom name="cone_1_base" class="terrain" type="box"
+              pos="1.2 -3.6 0.02" size="0.22 0.22 0.02" material="mat_darkgrey"/>
+
+        <geom name="cone_2" class="obstacle" type="cylinder"
+              pos="2.4 -3.9 0.22" size="0.16 0.22" material="mat_orange"/>
+        <geom name="cone_2_base" class="terrain" type="box"
+              pos="2.4 -3.9 0.02" size="0.22 0.22 0.02" material="mat_darkgrey"/>
+
+        <geom name="cone_3" class="obstacle" type="cylinder"
+              pos="3.6 -4.1 0.22" size="0.16 0.22" material="mat_orange"/>
+        <geom name="cone_3_base" class="terrain" type="box"
+              pos="3.6 -4.1 0.02" size="0.22 0.22 0.02" material="mat_darkgrey"/>
+
+        <geom name="bench_seat" class="obstacle" type="box"
+              pos="6.0 2.0 0.45" size="1.0 0.25 0.05" material="mat_wood"/>
+        <geom name="bench_back" class="obstacle" type="box"
+              pos="6.0 2.25 0.72" size="1.0 0.05 0.25" material="mat_wood"/>
+        <geom name="bench_apron" class="obstacle" type="box"
+              pos="6.00 2.00 0.20" size="1.00 0.25 0.20" material="mat_wood"/>
+
+        <geom name="car_body" class="obstacle" type="box"
+              pos="7.5 -5.0 0.62" size="2.05 0.85 0.42" material="mat_white"/>
+        <geom name="car_cabin" class="obstacle" type="box"
+              pos="7.2 -5.0 1.28" size="1.05 0.78 0.32" material="mat_white"/>
+        <geom name="car_windshield" class="terrain" type="box"
+              pos="8.22 -5.0 1.24" size="0.04 0.72 0.26" material="mat_glass"/>
+        <geom name="car_wheel_fl" class="terrain" type="cylinder"
+              pos="8.85 -4.2 0.33" euler="90 0 0" size="0.33 0.14" material="mat_darkgrey"/>
+        <geom name="car_wheel_fr" class="terrain" type="cylinder"
+              pos="8.85 -5.8 0.33" euler="90 0 0" size="0.33 0.14" material="mat_darkgrey"/>
+        <geom name="car_wheel_rl" class="terrain" type="cylinder"
+              pos="6.15 -4.2 0.33" euler="90 0 0" size="0.33 0.14" material="mat_darkgrey"/>
+        <geom name="car_wheel_rr" class="terrain" type="cylinder"
+              pos="6.15 -5.8 0.33" euler="90 0 0" size="0.33 0.14" material="mat_darkgrey"/>
+
+        <geom name="lamp_1_pole" class="obstacle" type="cylinder"
+              pos="-1.0 -5.5 1.9" size="0.09 1.9" material="mat_steel"/>
+        <geom name="lamp_1_head" class="terrain" type="box"
+              pos="-1.0 -5.5 3.85" size="0.16 0.30 0.09" material="mat_darkgrey"/>
+
+        <geom name="lamp_2_pole" class="obstacle" type="cylinder"
+              pos="5.0 -1.0 1.9" size="0.09 1.9" material="mat_steel"/>
+        <geom name="lamp_2_head" class="terrain" type="box"
+              pos="5.0 -1.0 3.85" size="0.16 0.30 0.09" material="mat_darkgrey"/>
+
+        <geom name="fence_rail_top" class="obstacle" type="box"
+              pos="0 9.5 1.05" size="10.0 0.05 0.06" material="mat_steel"/>
+        <geom name="fence_rail_mid" class="obstacle" type="box"
+              pos="0 9.5 0.60" size="10.0 0.05 0.06" material="mat_steel"/>
+        <geom name="fence_post_1" class="obstacle" type="cylinder"
+              pos="-8.0 9.5 0.6" size="0.07 0.6" material="mat_steel"/>
+        <geom name="fence_post_2" class="obstacle" type="cylinder"
+              pos="-4.0 9.5 0.6" size="0.07 0.6" material="mat_steel"/>
+        <geom name="fence_post_3" class="obstacle" type="cylinder"
+              pos="0.0 9.5 0.6" size="0.07 0.6" material="mat_steel"/>
+        <geom name="fence_post_4" class="obstacle" type="cylinder"
+              pos="4.0 9.5 0.6" size="0.07 0.6" material="mat_steel"/>
+        <geom name="fence_post_5" class="obstacle" type="cylinder"
+              pos="8.0 9.5 0.6" size="0.07 0.6" material="mat_steel"/>
+
+        <geom name="planter_1" class="obstacle" type="box"
+              pos="-5.5 1.0 0.30" size="0.55 0.55 0.30" material="mat_concrete"/>
+        <geom name="planter_1_soil" class="terrain" type="box"
+              pos="-5.5 1.0 0.61" size="0.45 0.45 0.02" material="mat_mud"/>
+        <geom name="planter_1_shrub" class="terrain" type="ellipsoid"
+              pos="-5.5 1.0 0.90" size="0.42 0.42 0.32" material="mat_foliage"/>
+
+        <geom name="pillar" class="obstacle" type="cylinder"
+              pos="-1.5 6.0 0.85" size="0.30 0.85" material="mat_concrete"/>
+        <geom name="pillar_cap" class="terrain" type="box"
+              pos="-1.5 6.0 1.75" size="0.38 0.38 0.06" material="mat_concrete"/>
+
+        <geom name="planter_2" class="obstacle" type="box"
+              pos="-5.5 -1.2 0.30" size="0.55 0.55 0.30" material="mat_concrete"/>
+        <geom name="planter_2_soil" class="terrain" type="box"
+              pos="-5.5 -1.2 0.61" size="0.45 0.45 0.02" material="mat_mud"/>
+        <geom name="planter_2_shrub" class="terrain" type="ellipsoid"
+              pos="-5.5 -1.2 0.90" size="0.42 0.42 0.32" material="mat_foliage"/>
+
+        <camera name="top_down" pos="0 0 26" xyaxes="1 0 0  0 1 0" fovy="60"/>
+
+        <geom name="barrel_4" class="obstacle" type="cylinder"
+              pos="-6.5 5.2 0.45" size="0.28 0.45" material="mat_blue"/>
+        <geom name="barrel_5" class="obstacle" type="cylinder"
+              pos="-5.8 4.6 0.45" size="0.28 0.45" material="mat_red"/>
+        <geom name="barrel_6" class="obstacle" type="cylinder"
+              pos="-0.6 2.6 0.45" size="0.28 0.45" material="mat_yellow"/>
+        <geom name="barrel_7" class="obstacle" type="cylinder"
+              pos="9.2 -1.8 0.45" size="0.28 0.45" material="mat_blue"/>
+
+        <geom name="crate_4" class="obstacle" type="box"
+              pos="-4.2 6.2 0.40" size="0.40 0.40 0.40" material="mat_wood"/>
+        <geom name="crate_5" class="obstacle" type="box"
+              pos="0.8 5.2 0.35" size="0.35 0.35 0.35" material="mat_wood"/>
+        <geom name="crate_6" class="obstacle" type="box"
+              pos="10.6 2.6 0.45" size="0.45 0.45 0.45" material="mat_wood"/>
+        <geom name="crate_7" class="obstacle" type="box"
+              pos="10.6 2.6 1.20" euler="0 0 18" size="0.32 0.32 0.32" material="mat_wood"/>
+
+        <geom name="cone_4" class="obstacle" type="cylinder"
+              pos="-3.2 3.8 0.22" size="0.16 0.22" material="mat_orange"/>
+        <geom name="cone_4_base" class="terrain" type="box"
+              pos="-3.2 3.8 0.02" size="0.22 0.22 0.02" material="mat_darkgrey"/>
+        <geom name="cone_5" class="obstacle" type="cylinder"
+              pos="-2.5 3.3 0.22" size="0.16 0.22" material="mat_orange"/>
+        <geom name="cone_5_base" class="terrain" type="box"
+              pos="-2.5 3.3 0.02" size="0.22 0.22 0.02" material="mat_darkgrey"/>
+        <geom name="cone_6" class="obstacle" type="cylinder"
+              pos="8.2 1.6 0.22" size="0.16 0.22" material="mat_orange"/>
+        <geom name="cone_6_base" class="terrain" type="box"
+              pos="8.2 1.6 0.02" size="0.22 0.22 0.02" material="mat_darkgrey"/>
+        <geom name="cone_7" class="obstacle" type="cylinder"
+              pos="8.8 1.2 0.22" size="0.16 0.22" material="mat_orange"/>
+        <geom name="cone_7_base" class="terrain" type="box"
+              pos="8.8 1.2 0.02" size="0.22 0.22 0.02" material="mat_darkgrey"/>
+
+        <geom name="planter_3" class="obstacle" type="box"
+              pos="2.2 4.6 0.30" size="0.55 0.55 0.30" material="mat_concrete"/>
+        <geom name="planter_3_soil" class="terrain" type="box"
+              pos="2.2 4.6 0.61" size="0.45 0.45 0.02" material="mat_mud"/>
+        <geom name="planter_3_shrub" class="terrain" type="ellipsoid"
+              pos="2.2 4.6 0.90" size="0.42 0.42 0.32" material="mat_foliage"/>
+
+        <geom name="planter_4" class="obstacle" type="box"
+              pos="3.7 4.6 0.30" size="0.55 0.55 0.30" material="mat_concrete"/>
+        <geom name="planter_4_soil" class="terrain" type="box"
+              pos="3.7 4.6 0.61" size="0.45 0.45 0.02" material="mat_mud"/>
+        <geom name="planter_4_shrub" class="terrain" type="ellipsoid"
+              pos="3.7 4.6 0.90" size="0.42 0.42 0.32" material="mat_foliage"/>
+
+        <geom name="planter_5" class="obstacle" type="box"
+              pos="11.2 -1.2 0.30" size="0.55 0.55 0.30" material="mat_concrete"/>
+        <geom name="planter_5_soil" class="terrain" type="box"
+              pos="11.2 -1.2 0.61" size="0.45 0.45 0.02" material="mat_mud"/>
+        <geom name="planter_5_shrub" class="terrain" type="ellipsoid"
+              pos="11.2 -1.2 0.90" size="0.42 0.42 0.32" material="mat_foliage"/>
+
+        <geom name="bench_2_seat" class="obstacle" type="box"
+              pos="-4.5 8.2 0.45" size="1.0 0.25 0.05" material="mat_wood"/>
+        <geom name="bench_2_back" class="obstacle" type="box"
+              pos="-4.5 8.45 0.72" size="1.0 0.05 0.25" material="mat_wood"/>
+        <geom name="bench_2_apron" class="obstacle" type="box"
+              pos="-4.50 8.20 0.20" size="1.00 0.25 0.20" material="mat_wood"/>
+
+        <geom name="bench_3_seat" class="obstacle" type="box"
+              pos="10.2 5.2 0.45" size="1.0 0.25 0.05" material="mat_wood"/>
+        <geom name="bench_3_back" class="obstacle" type="box"
+              pos="10.2 5.45 0.72" size="1.0 0.05 0.25" material="mat_wood"/>
+        <geom name="bench_3_apron" class="obstacle" type="box"
+              pos="10.20 5.20 0.20" size="1.00 0.25 0.20" material="mat_wood"/>
+
+        <geom name="tree_5_trunk" class="obstacle" type="cylinder"
+              pos="-6.2 -2.2 1.05" size="0.19 1.05" material="mat_bark"/>
+        <geom name="tree_5_canopy" class="terrain" type="ellipsoid"
+              pos="-6.2 -2.2 2.55" size="1.4 1.4 1.15" material="mat_foliage"/>
+
+        <geom name="tree_6_trunk" class="obstacle" type="cylinder"
+              pos="12.8 3.2 1.15" size="0.21 1.15" material="mat_bark"/>
+        <geom name="tree_6_canopy" class="terrain" type="ellipsoid"
+              pos="12.8 3.2 2.8" size="1.55 1.55 1.3" material="mat_foliage"/>
+
+        <geom name="tree_7_trunk" class="obstacle" type="cylinder"
+              pos="1.2 -7.2 0.90" size="0.16 0.90" material="mat_bark"/>
+        <geom name="tree_7_canopy" class="terrain" type="ellipsoid"
+              pos="1.2 -7.2 2.15" size="1.15 1.15 0.95" material="mat_foliage"/>
+
+        <geom name="lamp_3_pole" class="obstacle" type="cylinder"
+              pos="-7.2 2.2 1.9" size="0.09 1.9" material="mat_steel"/>
+        <geom name="lamp_3_head" class="terrain" type="box"
+              pos="-7.2 2.2 3.85" size="0.16 0.30 0.09" material="mat_darkgrey"/>
+
+        <geom name="lamp_4_pole" class="obstacle" type="cylinder"
+              pos="11.5 -6.5 1.9" size="0.09 1.9" material="mat_steel"/>
+        <geom name="lamp_4_head" class="terrain" type="box"
+              pos="11.5 -6.5 3.85" size="0.16 0.30 0.09" material="mat_darkgrey"/>
+
+        <geom name="garden_wall" class="obstacle" type="box"
+              pos="1.0 -8.4 0.55" size="3.5 0.30 0.55" material="mat_brick"/>
+        <geom name="garden_wall_cap" class="terrain" type="box"
+              pos="1.0 -8.4 1.13" size="3.6 0.38 0.04" material="mat_concrete"/>
+
+        <geom name="fence_e_rail_top" class="obstacle" type="box"
+              pos="16.0 0 1.05" size="0.05 8.0 0.06" material="mat_steel"/>
+        <geom name="fence_e_rail_mid" class="obstacle" type="box"
+              pos="16.0 0 0.60" size="0.05 8.0 0.06" material="mat_steel"/>
+        <geom name="fence_e_post_1" class="obstacle" type="cylinder"
+              pos="16.0 -8.0 0.6" size="0.07 0.6" material="mat_steel"/>
+        <geom name="fence_e_post_2" class="obstacle" type="cylinder"
+              pos="16.0 -4.0 0.6" size="0.07 0.6" material="mat_steel"/>
+        <geom name="fence_e_post_3" class="obstacle" type="cylinder"
+              pos="16.0 0.0 0.6" size="0.07 0.6" material="mat_steel"/>
+        <geom name="fence_e_post_4" class="obstacle" type="cylinder"
+              pos="16.0 4.0 0.6" size="0.07 0.6" material="mat_steel"/>
+        <geom name="fence_e_post_5" class="obstacle" type="cylinder"
+              pos="16.0 8.0 0.6" size="0.07 0.6" material="mat_steel"/>
+
+        <geom name="car_2_body" class="obstacle" type="box"
+              pos="-7.2 -8.6 0.62" size="2.05 0.85 0.42" material="mat_red"/>
+        <geom name="car_2_cabin" class="obstacle" type="box"
+              pos="-7.5 -8.6 1.28" size="1.05 0.78 0.32" material="mat_red"/>
+        <geom name="car_2_windshield" class="terrain" type="box"
+              pos="-6.48 -8.6 1.24" size="0.04 0.72 0.26" material="mat_glass"/>
+        <geom name="car_2_wheel_fl" class="terrain" type="cylinder"
+              pos="-5.85 -7.8 0.33" euler="90 0 0" size="0.33 0.14" material="mat_darkgrey"/>
+        <geom name="car_2_wheel_fr" class="terrain" type="cylinder"
+              pos="-5.85 -9.4 0.33" euler="90 0 0" size="0.33 0.14" material="mat_darkgrey"/>
+        <geom name="car_2_wheel_rl" class="terrain" type="cylinder"
+              pos="-8.55 -7.8 0.33" euler="90 0 0" size="0.33 0.14" material="mat_darkgrey"/>
+        <geom name="car_2_wheel_rr" class="terrain" type="cylinder"
+              pos="-8.55 -9.4 0.33" euler="90 0 0" size="0.33 0.14" material="mat_darkgrey"/>
+
+    </worldbody>
+
+</mujoco>

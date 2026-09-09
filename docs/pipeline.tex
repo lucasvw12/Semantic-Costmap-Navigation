@@ -1,0 +1,93 @@
+% Semantic Costmap Navigation -- system pipeline
+%
+%   pdflatex -output-directory=. pipeline.tex
+%   pdftocairo -png -r 200 -singlefile pipeline.pdf pipeline    # -> pipeline.png
+%
+% Embed in the README with:  ![Pipeline](docs/pipeline.png)
+
+\documentclass[border=14pt]{standalone}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, calc}
+
+\definecolor{ink}{HTML}{2B2F36}
+\definecolor{subtle}{HTML}{5C6470}
+
+\definecolor{percFill}{HTML}{DCE9F5}   \definecolor{percEdge}{HTML}{3B72A8}
+\definecolor{langFill}{HTML}{F5E5D6}   \definecolor{langEdge}{HTML}{B5703A}
+\definecolor{mapFill}{HTML}{E7E2F2}    \definecolor{mapEdge}{HTML}{6B5AA8}
+\definecolor{planFill}{HTML}{DDEEE4}   \definecolor{planEdge}{HTML}{2F7A55}
+
+\newcommand{\subcap}[1]{\[2.5pt]{\scriptsize\itshape\textcolor{subtle}{#1}}}
+
+\begin{document}
+\begin{tikzpicture}[
+    font=\sffamily\small,
+    >={Stealth[length=2.6mm,width=1.9mm]},
+    block/.style={
+      rounded corners=2.5pt, draw, line width=0.7pt,
+      text width=26mm, align=center, minimum height=14mm, inner sep=2mm
+    },
+    perc/.style={block, fill=percFill, draw=percEdge},
+    lang/.style={block, fill=langFill, draw=langEdge},
+    map/.style={block,  fill=mapFill,  draw=mapEdge},
+    plan/.style={block, fill=planFill, draw=planEdge},
+    link/.style={->, line width=0.8pt, draw=ink},
+    lane/.style={rotate=90, font=\sffamily\scriptsize, text=subtle}
+  ]
+
+  \def\cx{4.0}   % column pitch
+  \def\ry{2.8}   % row pitch
+
+  % ---- row 1: perception, left to right ------------------------------------
+  \node[perc] (rgbd)     at (0*\cx, 0) {RGB--D frame\subcap{640$\times$480}};
+  \node[perc] (dino)     at (1*\cx, 0) {Grounding DINO\subcap{zero-shot boxes}};
+  \node[perc] (sam)      at (2*\cx, 0) {SlimSAM\subcap{instance masks}};
+  \node[perc] (unproj)   at (3*\cx, 0) {Back-projection\subcap{pixels $\to$ world XYZ}};
+  \node[map]  (grid)     at (4*\cx, 0) {Occupancy grid\subcap{log-odds $+$ class scores}};
+
+  % ---- row 2: instruction, left to right -----------------------------------
+  \node[lang] (instr)    at (0*\cx, -\ry) {``avoid barrels''\subcap{free text}};
+  \node[lang] (llm)      at (1*\cx, -\ry) {Qwen2.5-1.5B\subcap{instruct}};
+  \node[lang] (json)     at (2*\cx, -\ry) {\{object, action,\amount\}};
+  \node[map]  (table)    at (3*\cx, -\ry) {Cost table\subcap{one cost per class}};
+
+  % ---- row 3: planning, right to left --------------------------------------
+  \node[plan] (costmap)  at (4*\cx, -2*\ry) {Semantic costmap\subcap{inflation $+$ clearance}};
+  \node[plan] (astar)    at (3*\cx, -2*\ry) {A*\subcap{line-of-sight smoothing}};
+  \node[plan] (pursuit)  at (2*\cx, -2*\ry) {Pure pursuit\subcap{linear, angular}};
+  \node[plan] (robot)    at (1*\cx, -2*\ry) {Robot\subcap{MuJoCo}};
+
+  % ---- lane captions --------------------------------------------------------
+  \node[lane] at ($(rgbd.west)  +(-7mm,0)$) {PERCEPTION};
+  \node[lane] at ($(instr.west) +(-7mm,0)$) {INSTRUCTION};
+  \node[lane] at ($(robot.west) +(-7mm,0)$) {PLANNING};
+
+  % ---- flow -----------------------------------------------------------------
+  \draw[link] (rgbd)   -- (dino);
+  \draw[link] (dino)   -- (sam);
+  \draw[link] (sam)    -- (unproj);
+  \draw[link] (unproj) -- (grid);
+
+  \draw[link] (instr)  -- (llm);
+  \draw[link] (llm)    -- (json);
+  \draw[link] (json)   -- (table);
+
+  \draw[link] (grid)      -- (costmap);
+  \draw[link] (table.east) -| (costmap.north west);
+
+  \draw[link] (costmap) -- (astar);
+  \draw[link] (astar)   -- (pursuit);
+  \draw[link] (pursuit) -- (robot);
+
+  % ---- closed loop: motion produces the next frame --------------------------
+  \draw[link, dashed, draw=subtle]
+    (robot.south) -- ++(0,-10mm) -| ([xshift=-17mm]rgbd.west) -- (rgbd.west);
+
+  \node[font=\sffamily\scriptsize, text=subtle, anchor=north]
+    at ($(robot.south)+(0,-13mm)$) {the robot moves, the camera sees new geometry};
+
+\end{tikzpicture}
+\end{document}
